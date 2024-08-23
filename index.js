@@ -1,19 +1,14 @@
-const app = require("express")();
-const http = require("http");
-const { Server } = require("socket.io");
+const { server, app } = require("./socket.io/socket");
 
 const dotenv = require("dotenv");
 
 dotenv.config({ path: "./.env" });
 
-const server = http.createServer(app);
-const io = new Server(server);
-
-io.on("connection", (socket) => {
-  console.log("new player joined with socket.id :", socket.id);
-
-  socket.on("disconnect", () => {
-    console.log(`player with socket.id : ${socket.id} disconnected`);
+app.get("/", (req, res) => {
+  return res.status(200).send({
+    message: "Welcome to Slot-Machine-App",
+    statusCode: 200,
+    path: "/home",
   });
 });
 
