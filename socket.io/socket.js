@@ -8,8 +8,8 @@ const {
   pressedSpinButton,
   pressedPlayAgain,
   exitGame,
+  setBetAmount,
 } = require("./controllers/socket.controller");
-const { RedisError } = require("../utils/RedisError.utils");
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -33,7 +33,7 @@ io.on("connection", (socket) => {
   socket.on("START_GAME", async () => {
     let result = await startGame(socket, id);
 
-    if (result.success === false) {
+    if (result?.success === false) {
       gameState = false;
 
       socket.emit("ERROR", result.error);
@@ -42,16 +42,16 @@ io.on("connection", (socket) => {
     }
 
     console.log(result);
-    socket.emit("MESSAGE", "EMIT WITH MONEY_INSERT");
-    gameState = "MONEY_INSERT";
+    socket.emit("MESSAGE", "EMIT  ON SET_BET_AMOUNT WITH _$ BETTING AMOUNT");
+    gameState = "SET_BET_AMOUNT";
   });
 
-  socket.on("MONEY_INSERT", () => {
-    if (gameState !== "MONEY_INSERT") return;
+  socket.on("SET_BET_AMOUNT", async ({ betAmount }) => {
+    if (gameState !== "SET_BET_AMOUNT") return;
 
-    let result = moneyInserted(socket, id);
+    let result = await setBetAmount(socket, id, betAmount);
 
-    if (result.success === false) {
+    if (result?.success === false) {
       gameState = false;
 
       socket.emit("ERROR", result.error);
@@ -59,20 +59,25 @@ io.on("connection", (socket) => {
       return;
     }
 
+    socket.emit(
+      "MESSAGE",
+      "EMIT SOCKET ON PRESSED_SPIN_BUTTON TO PLAY THE GAME"
+    );
     gameState = "PRESSED_SPIN_BUTTON";
   });
 
-  if (gameState)
-    socket.on("PRESSED_SPIN_BUTTON", () => {
-      let result = pressedSpinButton(socket);
+  socket.on("PRESSED_SPIN_BUTTON", () => {
+    if (gameState !== "PRESSED_SPIN_BUTTON") return;
 
-      if (result.success === false) {
-        gameState = false;
-        return;
-      }
+    let result = pressedSpinButton(socket);
 
-      gameState = true;
-    });
+    if (result.success === false) {
+      gameState = false;
+      return;
+    }
+
+    gameState = true;
+  });
 
   if (gameState)
     socket.on("PRESSED_PLAY_AGAIN", () => {
