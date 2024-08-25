@@ -4,11 +4,10 @@ const { Server } = require("socket.io");
 const dotenv = require("dotenv");
 const {
   startGame,
-  moneyInserted,
-  pressedSpinButton,
-  pressedPlayAgain,
-  exitGame,
   setBetAmount,
+  pressedSpinButton,
+  exitYes,
+  exitNo,
 } = require("./controllers/socket.controller");
 
 const server = http.createServer(app);
@@ -28,9 +27,11 @@ io.on("connection", (socket) => {
     "PLEASE PRESS START OR EMIT START_GAME TO START THE GAME"
   );
 
-  let gameState;
+  let gameState = "START_GAME";
 
   socket.on("START_GAME", async () => {
+    if (gameState !== "START_GAME") return;
+
     let result = await startGame(socket, id);
 
     if (result?.success === false) {
@@ -48,6 +49,8 @@ io.on("connection", (socket) => {
 
   socket.on("SET_BET_AMOUNT", async ({ betAmount }) => {
     if (gameState !== "SET_BET_AMOUNT") return;
+
+    if (typeof betAmount !== "number") return;
 
     let result = await setBetAmount(socket, id, betAmount);
 
@@ -76,32 +79,73 @@ io.on("connection", (socket) => {
       return;
     }
 
-    gameState = true;
+    socket.emit(
+      "MESSAGE",
+      "EMIT ON 'X' WITH PRESSED_PLAY_AGAIN TO PLAY AGAIN AND EXIT_GAME TO EXIT GAME"
+    );
+
+    socket.timeout(10000).on("X", ({ x }) => {
+      gameState = x;
+
+      console.log(gameState);
+
+      socket.emit("MESSAGE", `EMIT ON ${gameState}`);
+    });
   });
 
-  if (gameState)
-    socket.on("PRESSED_PLAY_AGAIN", () => {
-      let result = pressedPlayAgain(socket);
+  socket.on("PRESSED_PLAY_AGAIN", () => {
+    if (gameState !== "PRESSED_PLAY_AGAIN") return;
 
-      if (result.success === false) {
-        gameState = false;
-        return;
-      }
+    socket.emit(
+      "MESSAGE",
+      "WANT TO PLAY WITH SAME BET AMOUNT OR SET NEW AMOUNT ? EMIT ON SET_BET_AMOUNT"
+    );
 
-      gameState = true;
-    });
+    gameState = "SET_BET_AMOUNT";
+  });
 
-  if (gameState)
-    socket.on("EXIT_GAME", () => {
-      let result = exitGame(socket);
+  socket.on("EXIT_GAME", async () => {
+    socket.emit(
+      "MESSAGE",
+      "ARE YOU SURE YOU WANT TO EXIT ?!!!! EMIT ON EXIT_YES ELSE EXIT_NO "
+    );
 
-      if (result.success === false) {
-        gameState = false;
-        return;
-      }
+    gameState = "EXIT_GAME";
+  });
 
-      gameState = true;
-    });
+  socket.on("EXIT_YES", async () => {
+    if (gameState !== "EXIT_GAME") return;
+
+    let result = await exitYes(socket, id);
+
+    if (result?.success === false) {
+      socket.emit("ERROR", "UNABLE TO EXIT_GAME");
+
+      socket.emit(
+        "MESSAGE",
+        "RE-EMIT ON EXIT_YES AFTER SOMETIME TO EXIT GAME OR EXIT_NO TO NOT EXIT_GAME"
+      );
+      return;
+    }
+
+    gameState = "START_GAME";
+
+    if (result?.success) socket.emit("MESSAGE", "GAME EXITTED SUCCESSFULLY");
+  });
+
+  socket.on("EXIT_NO", async () => {
+    if (gameState !== "EXIT_GAME") return;
+
+    let result = await exitNo(socket, id);
+
+    if (!result || result.success === false) return;
+
+    gameState = result.message;
+    console.log(result.message);
+    console.log(gameState);
+
+    socket.emit("MESSAGE", "EXIT GAME CANCELLED SUCCESSFULLY");
+  });
 
   socket.on("disconnect", () => {
     console.log(`player with socket.id : ${socket.id} disconnected`);

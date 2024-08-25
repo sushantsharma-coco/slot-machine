@@ -234,21 +234,38 @@ const pressedSpinButton = async (socket, id) => {
   }
 };
 
-// pressedSpinButton();
-
-const pressedPlayAgain = async () => {
+const exitYes = async (socket, id) => {
   try {
+    // before deleting the state we need to check and store the current user state
+
+    console.log("exitYes running");
+    let r = await redisClient.del(`player-${id}`);
+
+    if (!r) return new RedisError();
+
+    return new RedisSuccess();
   } catch (error) {
-    console.error("error occured during play again", error?.message);
+    console.error("error occured during exit yes", error?.message);
 
     return;
   }
 };
 
-const exitGame = async () => {
+const exitNo = async (socket, id) => {
   try {
+    console.log("exitNo running");
+    let r = await redisClient.get(`player-${id}`);
+    console.log(r);
+
+    if (!r) return new RedisError(false, "404", "player state not found");
+
+    r = await JSON.parse(r);
+
+    console.log(r);
+
+    return new RedisSuccess(true, r.gameState.playState);
   } catch (error) {
-    console.error("error occured during exit game", error?.message);
+    console.error("error occured during exit no", error?.message);
 
     return;
   }
@@ -256,8 +273,8 @@ const exitGame = async () => {
 
 module.exports = {
   startGame,
-  exitGame,
   setBetAmount,
   pressedSpinButton,
-  pressedPlayAgain,
+  exitYes,
+  exitNo,
 };
