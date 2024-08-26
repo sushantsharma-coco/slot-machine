@@ -15,15 +15,19 @@ const startGame = async (socket, id) => {
     let gameId = randomUUID();
     playerExists = await redisClient.get(`player-${id}`);
 
-    // if (playerExists?.length)
-    //   return new RedisError(false, "user already exists in redisClient");
-
+    // TODO : get user account and balance data from redis with key: user-${id} as it must be present
+    // if not return user with error, else move foward with init user state with data
     const playerObj = {
       id,
       socketId: socket.id,
       gameId,
+      // TODO: this data will come from redis as when the user login's the current balance must be inserted in the redis with user-${id}
       gameState: {
+        principalBalanceBeforeBet: 100,
+        principalBalanceAfterBet: 0,
         betAmount: 0,
+        wonAmount: 0,
+        lostAmount: 0,
       },
     };
 
@@ -125,27 +129,34 @@ const setBetAmount = async (socket, id, betAmount) => {
   try {
     console.log("setBetAmount running");
 
-    // TODO: check for sufficient balance in account for betAmount or else emit an error event with insufficient balance error message
+    // check for player existance in redis-client which is must
 
-    // check if the user exists as a player in redisClient
+    let playerExists = await redisClient.get(`player-${id}`);
 
-    let playerObj = await redisClient.get(`player-${id}`);
+    playerExists = JSON.parse(playerExists);
 
-    if (!playerObj)
-      return RedisError(false, "404", "player not found in redisClient");
+    if (!playerExists.id) return RedisError(false, "player not found");
 
-    // set bet amount with player
+    // check for sufficient balance in account for betAmount or else emit an error event with insufficient balance error message
 
-    playerObj = JSON.parse(playerObj);
-    console.log(playerObj);
+    if (
+      playerExists.gameState.principalBalanceAfterBet === undefined ||
+      playerExists.gameState.principalBalanceAfterBet === null
+    )
+      return new RedisError(false, "no funds present");
 
-    playerObj.gameState.betAmount = betAmount;
+    if (playerExists?.gameState?.principalBalanceBeforeBet - betAmount <= 0)
+      return new RedisError(false, "insufficient funds");
 
-    console.log(playerObj);
+    playerExists.gameState.principalBalanceAfterBet =
+      playerExists.gameState.principalBalanceBeforeBet - betAmount;
+    playerExists.gameState.betAmount = betAmount;
 
-    playerObj = JSON.stringify(playerObj);
+    console.log(playerExists);
 
-    let redis = await redisClient.set(`player-${id}`, playerObj);
+    playerExists = JSON.stringify(playerExists);
+
+    let redis = await redisClient.set(`player-${id}`, playerExists);
 
     if (!redis) {
       socket.emit("ERROR", "UNABLE TO SET BET AMOUNT");
@@ -178,40 +189,50 @@ const pressedSpinButton = async (socket, id) => {
 
     let userWon = false;
 
-    WinningCombinationsEnum["1"].forEach(([v1, v2, v3]) => {
-      if (v1 == val1 && v2 === val2 && v3 === val3) {
-        userWon = true;
+    // approcah first : taking winning_combination_array
+    // WinningCombinationsEnum["1"].forEach(([v1, v2, v3]) => {
+    //   if (v1 == val1 && v2 === val2 && v3 === val3) {
+    //     userWon = true;
+    //     console.log(
+    //       "player won :",
+    //       v1,
+    //       v2,
+    //       v3,
+    //       " with com :",
+    //       val1,
+    //       val2,
+    //       val3
+    //     );
+    //   } else {
+    //     console.log(
+    //       "player lost :",
+    //       v1,
+    //       v2,
+    //       v3,
+    //       " with com :",
+    //       val1,
+    //       val2,
+    //       val3
+    //     );
+    //   }
+    // });
 
-        console.log(
-          "player won :",
-          v1,
-          v2,
-          v3,
-          " with com :",
-          val1,
-          val2,
-          val3
-        );
-      } else {
-        console.log(
-          "player lost :",
-          v1,
-          v2,
-          v3,
-          " with com :",
-          val1,
-          val2,
-          val3
-        );
-      }
-    });
+    // approach second
+
+    if (((val1 === val2) === val3) === 7) userWon = true; //777 jackpot won
+
+    if ((val1 === val2) === val3) userWon = true; // 111,222,333... three of a kind won
+
+    // if (val1 == val2 || val2 == val3) userWon = true; // 112,211,221,122... two of a kind won with same values adjcent
+
+    if (val1 == val2 || val2 == val3 || val1 == val3) userWon = true; // 112,211,221,122... two of a kind won with same values not adjcent
 
     console.log(userWon);
 
     if (userWon) {
       socket.emit(
         "MESSAGE",
-        `PLAYER WON WITH WINNING COMBINATION OF ${(val1, val2, val3)}`
+        `PLAYER WON WITH WINNING COMBINATION OF ${val1}, ${val2}, ${val3}`
       );
 
       // do all the calculations and operations for winning with certain win-comb

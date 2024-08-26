@@ -29,7 +29,11 @@ io.on("connection", async (socket) => {
 
   // TODO : if auth unsuccessful the user can not proceed with the game and socket event won't be emmited
 
-  if (authResult?.success === false) return;
+  if (!authResult || authResult?.success === false) {
+    socket.emit("ERROR", "UNAUTHORIZED SOCKET REQRUEST");
+
+    return;
+  }
 
   // TODO : if auth successful then only the user proceeds with the game and socket event will be emmited
 

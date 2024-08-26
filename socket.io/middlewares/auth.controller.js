@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const { RedisError } = require("../../utils/RedisError.utils");
 const { RedisSuccess } = require("../../utils/RedisSuccess.utils");
 
-const checkAuthentic = async (socket, id, accessToken) => {
+const checkAuthentic = async (socket) => {
   try {
     let { id } = socket.handshake.query;
     let accessToken = socket.handshake.headers.token;
@@ -12,7 +12,7 @@ const checkAuthentic = async (socket, id, accessToken) => {
 
     let tokenData = await jwt.verify(accessToken, process.env.JWT_SECRET);
 
-    console.log(tokenData);
+    console.log("tokenData", tokenData);
 
     if (!tokenData || !tokenData?.id)
       return new RedisError(false, "_id not found");
@@ -29,6 +29,8 @@ const checkAuthentic = async (socket, id, accessToken) => {
     return new RedisSuccess();
   } catch (error) {
     console.error("error in checkAuthentic func :", error?.message);
+
+    return;
   }
 };
 
