@@ -14,7 +14,7 @@ const { checkAuthentic } = require("./middlewares/auth.controller");
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
-});
+}).of("/slot-machine");
 
 dotenv.config({ path: "./.env" });
 
