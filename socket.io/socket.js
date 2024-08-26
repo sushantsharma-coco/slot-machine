@@ -9,6 +9,7 @@ const {
   exitYes,
   exitNo,
 } = require("./controllers/socket.controller");
+const { checkAuthentic } = require("./middlewares/auth.controller");
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -17,10 +18,20 @@ const io = new Server(server, {
 
 dotenv.config({ path: "./.env" });
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
+  // TODO :: USER AUTHENTICATION MUST BE DONE HERE BEFORE THE SOCKET CAN EMIT START
+
+  let authResult = await checkAuthentic(socket);
+
+  console.log("authResult", authResult);
+
   let { id } = socket.handshake.query;
 
-  console.log(id, socket.id);
+  // TODO : if auth unsuccessful the user can not proceed with the game and socket event won't be emmited
+
+  if (authResult?.success === false) return;
+
+  // TODO : if auth successful then only the user proceeds with the game and socket event will be emmited
 
   socket.emit(
     "START",
@@ -98,10 +109,10 @@ io.on("connection", (socket) => {
 
     socket.emit(
       "MESSAGE",
-      "WANT TO PLAY WITH SAME BET AMOUNT OR SET NEW AMOUNT ? EMIT ON SET_BET_AMOUNT"
+      "WANT TO PLAY WITH SAME BET AMOUNT OR SET NEW AMOUNT ? EMIT ON START_GAME"
     );
 
-    gameState = "SET_BET_AMOUNT";
+    gameState = "START_GAME";
   });
 
   socket.on("EXIT_GAME", async () => {

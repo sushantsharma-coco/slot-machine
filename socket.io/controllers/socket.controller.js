@@ -36,7 +36,7 @@ const startGame = async (socket, id) => {
 
     if (!result) return new RedisError();
 
-    socket.emit("MESSAGE", "GAME INITIALIZED SUCCESSFULLY");
+    socket.emit("MESSAGE", "NEW GAME INITIALIZED SUCCESSFULLY");
 
     return new RedisSuccess();
   } catch (error) {
