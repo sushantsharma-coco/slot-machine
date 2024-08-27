@@ -10,4 +10,24 @@ module.exports = {
       [7, 7, 7],
     ],
   },
+
+  WinningTypes: {
+    jackpot: "JACKPOT",
+    threeOfKind: "THREE_OF_KIND",
+    twoOfKind: "TWO_OF_KIND",
+  },
+
+  LostType: {
+    lost: "LOST",
+  },
+
+  WinningTypesReturn: {
+    jackpot: 50,
+    threeOfKind: 35,
+    twoOfKind: 10,
+  },
+
+  LostTypeReturn: {
+    lost: -1,
+  },
 };
