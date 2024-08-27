@@ -125,6 +125,7 @@ const login = async (req, res, next) => {
 
     // Respond with success message and tokens
     res.json({
+      id: user._id,
       userExists: true,
       statusCode: 200,
       success: true,

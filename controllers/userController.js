@@ -9,14 +9,30 @@
 //     );
 
 //     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
+//       return res.status(404).json({
+//         userExists: false,
+//         statusCode: 404,
+//         success: false,
+//         message: "User not found",
+//       });
 //     }
 
 //     if (user.role !== "user") {
-//       return res.status(403).json({ message: "Access denied" });
+//       return res.status(403).json({
+//         userExists: true,
+//         statusCode: 403,
+//         success: false,
+//         message: "Access denied",
+//       });
 //     }
 
-//     res.status(200).json(user);
+//     res.status(200).json({
+//       userExists: true,
+//       statusCode: 200,
+//       success: true,
+//       message: "User retrieved successfully",
+//       user,
+//     });
 //   } catch (error) {
 //     next(errorHandler);
 //   }
