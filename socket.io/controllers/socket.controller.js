@@ -13,6 +13,7 @@ const { randomUUID } = require("node:crypto");
 const { Utility } = require("../../utils/Utility.utils");
 const Game = require("../../models/game.model");
 const Wallet = require("../../models/wallet.model");
+const { isValidObjectId, default: mongoose } = require("mongoose");
 
 const startGame = async (socket, id) => {
   try {
@@ -117,9 +118,7 @@ const setBetAmount = async (socket, id, betAmount) => {
 
 const pressedSpinButton = async (socket, id) => {
   try {
-    console.log("socket", socket.id, "id", id);
-
-    console.log(WinningCombinationsEnum["1"]);
+    console.log("isValidObjectId", isValidObjectId(id));
 
     let val1 = Utility.randomValueUpto7();
     let val2 = Utility.randomValueUpto7();
@@ -194,20 +193,20 @@ const pressedSpinButton = async (socket, id) => {
       }
 
       // update the current amounts and stuff
-      let updatedWallet;
+      let updatedWallet = await Wallet.findOne({
+        user: new mongoose.Types.ObjectId(id),
+      });
 
-      do {
-        updatedWallet = await Wallet.findOneAndUpdate(
-          { user: id },
-          {
-            walletBalance:
-              player.gameState.principalBalanceAfterBet +
-              player.gameState.wonAmount,
-          }
-        );
+      console.log("updatedWallet", updatedWallet);
 
-        console.log(updatedWallet);
-      } while (!updatedWallet);
+      if (!updatedWallet) return new RedisError(false, "wallet not found");
+
+      updatedWallet.walletBalance =
+        player.gameState.wonAmount + player.gameState.principalBalanceAfterBet;
+
+      await updatedWallet.save();
+
+      console.log("updatedWallet in won ", updatedWallet);
     } else {
       socket.emit("WON_LOOSE", userWon);
       // TODO :
@@ -221,34 +220,38 @@ const pressedSpinButton = async (socket, id) => {
       }
 
       // update the current amounts and stuff
-      let updatedWallet;
-      do {
-        updatedWallet = await Wallet.findOneAndUpdate(
-          { user: id },
-          { walletBalance: player.gameState.principalBalanceAfterBet }
-        );
+      let updatedWallet = await Wallet.findOne({
+        user: new mongoose.Types.ObjectId(id),
+      });
 
-        console.log(updatedWallet);
-      } while (!updatedWallet);
+      console.log("updatedWallet", updatedWallet);
+
+      if (!updatedWallet) return new RedisError(false, "wallet not found");
+
+      updatedWallet.walletBalance =
+        player.gameState.wonAmount + player.gameState.principalBalanceAfterBet;
+
+      await updatedWallet.save();
+
+      console.log("updatedWallet in won ", updatedWallet);
     }
 
     console.log("player in spin btn end ", player);
 
     let game;
-    do {
-      game = await Game.create({
-        playerId: player.id,
-        socketId: player.socketId,
-        gameId: player.gameId,
-        "gameState.principalBalance":
-          player.gameState.principalBalanceBeforeBet,
-        "gameState.currentBalance": player.gameState.principalBalanceAfterBet,
-        "gameState.betAmount": player.gameState.betAmount,
-        "gameState.wonAmount": player.gameState.wonAmount,
-        "gameState.lostAmount": player.gameState.lostAmount,
-        "gameState.combo": player.gameState.combo,
-      });
-    } while (!game);
+    // do {
+    game = await Game.create({
+      playerId: player.id,
+      socketId: player.socketId,
+      gameId: player.gameId,
+      "gameState.principalBalance": player.gameState.principalBalanceBeforeBet,
+      "gameState.currentBalance": player.gameState.principalBalanceAfterBet,
+      "gameState.betAmount": player.gameState.betAmount,
+      "gameState.wonAmount": player.gameState.wonAmount,
+      "gameState.lostAmount": player.gameState.lostAmount,
+      "gameState.combo": player.gameState.combo,
+    });
+    // } while (!game);
 
     console.log("game", game);
 
