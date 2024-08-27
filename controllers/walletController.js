@@ -7,8 +7,10 @@ const wallet = async (req, res, next) => {
 
     const { walletBalance } = req.body;
 
+    console.log(req.user);
+
     const wallet = await Wallet.create({
-      user: id,
+      user: req.user._id,
       walletBalance,
     });
 

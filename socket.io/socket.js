@@ -155,7 +155,7 @@ io.on("connection", async (socket) => {
 
     if (!result || result.success === false) return;
 
-    gameState = result.message;
+    gameState = result.message.currentGameState;
     console.log(result.message);
     console.log(gameState);
 

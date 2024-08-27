@@ -2,7 +2,6 @@ const { redisClient } = require("../../client");
 const { RedisError } = require("../../utils/RedisError.utils");
 const { RedisSuccess } = require("../../utils/RedisSuccess.utils");
 const {
-  WinningCombinationsEnum,
   WinningTypes,
   LostType,
   WinningTypesReturn,
@@ -30,7 +29,7 @@ const startGame = async (socket, id) => {
       gameId,
       // TODO: this data will come from redis as when the user login's the current balance must be inserted in the redis with user-${id}
       gameState: {
-        principalBalanceBeforeBet: 100,
+        principalBalanceBeforeBet: 1000,
         principalBalanceAfterBet: 0,
         betAmount: 0,
         wonAmount: 0,
@@ -265,7 +264,7 @@ const pressedSpinButton = async (socket, id) => {
 
 const exitYes = async (socket, id) => {
   try {
-    // before deleting the state we need to check and store the current user state and if any bets are placed then we need to rool back
+    //DONE: before deleting the state we need to check and store the current user state and if any bets are placed then we need to rool back
 
     console.log("exitYes running");
     let r = await redisClient.del(`player-${id}`);
@@ -282,6 +281,8 @@ const exitYes = async (socket, id) => {
 
 const exitNo = async (socket, id) => {
   try {
+    // TODO : return the game to previous state
+
     console.log("exitNo running");
     let r = await redisClient.get(`player-${id}`);
     console.log(r);
@@ -292,7 +293,7 @@ const exitNo = async (socket, id) => {
 
     console.log(r);
 
-    return new RedisSuccess(true, r.gameState.playState);
+    return new RedisSuccess(true, r.gameState);
   } catch (error) {
     console.error("error occured during exit no", error?.message);
 

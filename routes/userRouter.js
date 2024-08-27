@@ -5,6 +5,6 @@ const wallet = require("../controllers/walletController.js");
 const auth = require("../middlewares/authMiddleware");
 
 router.get("/currentUser/:id", auth, currentUser);
-router.post("/wallet/:id", wallet);
+router.post("/wallet", auth, wallet);
 
 module.exports = router;
