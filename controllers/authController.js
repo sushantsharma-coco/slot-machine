@@ -22,7 +22,15 @@ const generateTokens = (user) => {
 
 const register = async (req, res, next) => {
   const { name, email, password, role } = req.body;
-
+  // Check if any required fields are missing
+  if (!name || !email || !password) {
+    return res.status(400).json({
+      userExists: false,
+      statusCode: 400,
+      success: false,
+      message: "Please fill in all required fields",
+    });
+  }
   try {
     // Check if the user already exists based on email
     const userExists = await User.findOne({ email });
@@ -57,6 +65,16 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   const { email, password } = req.body;
+
+  // Check if email or password is missing
+  if (!email || !password) {
+    return res.status(400).json({
+      userExists: false,
+      statusCode: 400,
+      success: false,
+      message: "Please fill in all required fields",
+    });
+  }
 
   try {
     // Find the user by email
