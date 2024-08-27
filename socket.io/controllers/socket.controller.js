@@ -19,17 +19,20 @@ const startGame = async (socket, id) => {
     console.log(socket.id, id);
 
     let gameId = randomUUID();
-    playerExists = await redisClient.get(`player-${id}`);
 
     // TODO : get user account and balance data from redis with key: user-${id} as it must be present
+    // user = await redisClient.get(`user-${id}`);
+
     // if not return user with error, else move foward with init user state with data
+    // if (!user) return new RedisError(false, "user in redisClient not found");
+
     const playerObj = {
       id,
       socketId: socket.id,
       gameId,
       // TODO: this data will come from redis as when the user login's the current balance must be inserted in the redis with user-${id}
       gameState: {
-        principalBalanceBeforeBet: 1000,
+        principalBalanceBeforeBet: user.walletBalance || 0,
         principalBalanceAfterBet: 0,
         betAmount: 0,
         wonAmount: 0,
