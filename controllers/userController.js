@@ -24,6 +24,12 @@ const currentUser = async (req, res, next) => {
     // }
 
     res.status(200).json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
       userExists: true,
       statusCode: 200,
       success: true,
