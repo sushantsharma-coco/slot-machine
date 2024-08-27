@@ -1,7 +1,7 @@
 const { server, app } = require("./socket.io/socket");
 const connectDB = require("./db/connection.js");
 const authRouter = require("./routes/authRouter");
-// const userRouter = require("./routes/userRouter");
+const userRouter = require("./routes/userRouter");
 
 const errorHandler = require("./middlewares/errorMiddleware.js");
 const express = require("express");
@@ -26,7 +26,7 @@ connectDB();
 app.use(errorHandler);
 app.use(express.json());
 app.use("/api/v1/user", authRouter);
-// app.use("/api/v1/user", userRouter);
+app.use("/api/v1/user", userRouter);
 
 server.listen((process.env.PORT ??= 5000), () => {
   console.log("server running on port :", process.env.PORT);

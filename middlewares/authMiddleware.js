@@ -23,15 +23,12 @@ const protect = async (req, res, next) => {
   }
 };
 
-const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === "owner") {
-    next();
-  } else {
-    res.status(403).json({ message: "Admin resource, access denied" });
-  }
-};
+// const isAdmin = (req, res, next) => {
+//   if (req.user && req.user.role === "owner") {
+//     next();
+//   } else {
+//     res.status(403).json({ message: "Admin resource, access denied" });
+//   }
+// };
 
-module.exports = {
-  protect,
-  isAdmin,
-};
+module.exports = protect;
