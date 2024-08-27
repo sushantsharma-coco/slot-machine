@@ -89,7 +89,7 @@ io.on("connection", async (socket) => {
 
     let result = await pressedSpinButton(socket, id);
 
-    if (result.success === false) {
+    if (result?.success === false) {
       gameState = false;
       return;
     }
