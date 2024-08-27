@@ -1,6 +1,6 @@
 const { server, app } = require("./socket.io/socket");
 const connectDB = require("./db/connection.js");
-const authRouter = require("./routes/authRouter");
+const authRouter = require("./routes/authRouter.js");
 const userRouter = require("./routes/userRouter");
 
 const errorHandler = require("./middlewares/errorMiddleware.js");
@@ -25,7 +25,7 @@ app.get("/", (req, res) => {
 connectDB();
 app.use(errorHandler);
 app.use(express.json());
-app.use("/api/v1/user", authRouter);
+app.use("/api/v1/user", authRouter.router);
 app.use("/api/v1/user", userRouter);
 
 server.listen((process.env.PORT ??= 5000), () => {

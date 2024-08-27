@@ -1,37 +1,39 @@
+const User = require("../models/userSchema.js");
 const jwt = require("jsonwebtoken");
-const User = require("../models/userSchema");
+const { ApiError } = require("../utils/ApiError.utils");
+const dotenv = require("dotenv");
+dotenv.config();
+const auth = async (req, res, next) => {
+  try {
+    const accessToken =
+      req.cookies?.accessToken ||
+      req.header("Authorization")?.replace("Bearer ", "");
 
-const protect = async (req, res, next) => {
-  let token;
+    if (!accessToken) throw new ApiError(401, "Access token not found");
+    console.log("token", accessToken);
 
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    try {
-      token = req.headers.authorization.split(" ")[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select("-password");
+    const tokenData = await jwt.verify(accessToken, process.env.JWT_SECRET);
+    console.log("token", tokenData);
+    if (!tokenData || !tokenData.id) throw new ApiError(401, "Invalid token");
 
-      console.log("req.user in auth", req.user);
+    const user = await User.findById(tokenData.id);
 
-      next();
-    } catch (error) {
-      res.status(401).json({ message: "Not authorized, token failed" });
-    }
-  } else {
-    if (!token) {
-      res.status(401).json({ message: "Not authorized, no token" });
-    }
+    if (!user) throw new ApiError(404, "User not found, try logging in");
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error("Error occurred:", error.message);
+
+    return res.status(error?.statusCode || 401).send({
+      statusCode: error?.statusCode || 401,
+      data: {
+        message: error?.message || "Unauthorized user",
+        data: null,
+      },
+      success: false,
+    });
   }
 };
 
-// const isAdmin = (req, res, next) => {
-//   if (req.user && req.user.role === "owner") {
-//     next();
-//   } else {
-//     res.status(403).json({ message: "Admin resource, access denied" });
-//   }
-// };
-
-module.exports = protect;
+module.exports = auth;
