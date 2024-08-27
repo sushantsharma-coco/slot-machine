@@ -8,7 +8,7 @@ const checkAuthentic = async (socket) => {
     let accessToken = socket.handshake.headers.token;
 
     if (!id || !accessToken)
-      return RedisError(false, "id or auth-token not found");
+      return new RedisError(false, "id or auth-token not found");
 
     let tokenData = await jwt.verify(accessToken, process.env.JWT_SECRET);
 
