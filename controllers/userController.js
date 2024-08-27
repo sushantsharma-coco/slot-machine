@@ -1,9 +1,8 @@
-const User = require("../models/userSchema.js");
-const errorHandler = require("../middlewares/errorMiddleware.js");
+const errorHandler = require("../middlewares/errorMiddleware");
+
 const currentUser = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const user = await User.findOne({ _id: id }).select("-password");
+    const user = req.user;
 
     if (!user) {
       return res.status(404).json({
@@ -14,30 +13,14 @@ const currentUser = async (req, res, next) => {
       });
     }
 
-    // if (user.role !== "user") {
-    //   return res.status(403).json({
-    //     userExists: true,
-    //     statusCode: 403,
-    //     success: false,
-    //     message: "Access denied",
-    //   });
-    // }
-
     res.status(200).json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
       userExists: true,
       statusCode: 200,
       success: true,
       message: "User retrieved successfully",
-      user,
     });
   } catch (error) {
-    errorHandler(error, req, res, next); // Use the errorHandler middleware
+    errorHandler(error, req, res, next);
   }
 };
 
