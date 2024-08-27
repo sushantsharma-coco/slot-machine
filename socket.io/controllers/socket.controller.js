@@ -12,6 +12,7 @@ const {
 const { randomUUID } = require("node:crypto");
 const { Utility } = require("../../utils/Utility.utils");
 const Game = require("../../models/game.model");
+const Wallet = require("../../models/wallet.model");
 
 const startGame = async (socket, id) => {
   try {
@@ -193,6 +194,20 @@ const pressedSpinButton = async (socket, id) => {
       }
 
       // update the current amounts and stuff
+      let updatedWallet;
+
+      do {
+        updatedWallet = await Wallet.findOneAndUpdate(
+          { user: id },
+          {
+            walletBalance:
+              player.gameState.principalBalanceAfterBet +
+              player.gameState.wonAmount,
+          }
+        );
+
+        console.log(updatedWallet);
+      } while (!updatedWallet);
     } else {
       socket.emit("WON_LOOSE", userWon);
       // TODO :
@@ -206,24 +221,36 @@ const pressedSpinButton = async (socket, id) => {
       }
 
       // update the current amounts and stuff
+      let updatedWallet;
+      do {
+        updatedWallet = await Wallet.findOneAndUpdate(
+          { user: id },
+          { walletBalance: player.gameState.principalBalanceAfterBet }
+        );
+
+        console.log(updatedWallet);
+      } while (!updatedWallet);
     }
 
     console.log("player in spin btn end ", player);
 
     let game;
-    // do {
-    // game = await Game.create({
-    //   playerId: player.id,
-    //   socketId: player.socketId,
-    //   gameId: player.gameId,
-    //   "gameState.principalBalance": player.gameState.principalBalanceBeforeBet,
-    //   "gameState.currentBalance": player.gameState.principalBalanceAfterBet,
-    //   "gameState.betAmount": player.gameState.betAmount,
-    //   "gameState.wonAmount": player.gameState.wonAmount,
-    //   "gameState.lostAmount": player.gameState.lostAmount,
-    //   combo: player.gameState.combo,
-    // });
-    // } while (!game);
+    do {
+      game = await Game.create({
+        playerId: player.id,
+        socketId: player.socketId,
+        gameId: player.gameId,
+        "gameState.principalBalance":
+          player.gameState.principalBalanceBeforeBet,
+        "gameState.currentBalance": player.gameState.principalBalanceAfterBet,
+        "gameState.betAmount": player.gameState.betAmount,
+        "gameState.wonAmount": player.gameState.wonAmount,
+        "gameState.lostAmount": player.gameState.lostAmount,
+        "gameState.combo": player.gameState.combo,
+      });
+    } while (!game);
+
+    console.log("game", game);
 
     return new RedisSuccess(true, { val1, val2, val3 });
   } catch (error) {
