@@ -5,4 +5,6 @@ const redisClient = new ioredis.Redis({
   port: 6379,
 });
 
+if (redisClient) console.log("redis-connection successful");
+
 module.exports = { redisClient };

@@ -34,11 +34,10 @@ const register = async (req, res, next) => {
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
-    next(errorHandler(error));
+    errorHandler(error, req, res, next); // Use the errorHandler middleware
   }
 };
 
-// controllers/authController.js
 const login = async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -74,7 +73,7 @@ const login = async (req, res, next) => {
       refreshToken,
     });
   } catch (error) {
-    next(error); // Pass the error directly to next
+    errorHandler(error, req, res, next); // Use the errorHandler middleware
   }
 };
 
@@ -109,7 +108,7 @@ const refreshAccessToken = async (req, res, next) => {
 
     res.json({ message: "Access token refreshed", accessToken });
   } catch (error) {
-    next(errorHandler(error));
+    errorHandler(error, req, res, next); // Use the errorHandler middleware
   }
 };
 
@@ -119,7 +118,7 @@ const logout = (req, res, next) => {
     res.clearCookie("refreshToken");
     res.json({ message: "Logout successful" });
   } catch (error) {
-    next(errorHandler(error));
+    errorHandler(error, req, res, next); // Use the errorHandler middleware
   }
 };
 
