@@ -22,18 +22,26 @@ const generateTokens = (user) => {
 
 const register = async (req, res, next) => {
   const { name, email, password, role } = req.body;
+
   try {
+    // Check if the user already exists based on email
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
+      return res
+        .status(400)
+        .json({ message: "User with this email already exists" });
     }
 
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create and save the new user
     const user = new User({ name, email, password: hashedPassword, role });
     await user.save();
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
+    console.error("Registration error:", error); // Log the error for debugging
     errorHandler(error, req, res, next); // Use the errorHandler middleware
   }
 };
@@ -42,30 +50,35 @@ const login = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
+    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
+    // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
+    // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user);
 
+    // Set cookies for tokens
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production", // Set to true in production for HTTPS
       maxAge: 3600000, // 1 hour
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production", // Set to true in production for HTTPS
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    // Respond with success message and tokens
     res.json({
       message: "Login successful",
       role: user.role,
@@ -73,6 +86,7 @@ const login = async (req, res, next) => {
       refreshToken,
     });
   } catch (error) {
+    console.error("Login error:", error); // Log the error for debugging
     errorHandler(error, req, res, next); // Use the errorHandler middleware
   }
 };
