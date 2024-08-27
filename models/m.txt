@@ -1,0 +1,28 @@
+
+
+   const playerObj = {
+      id,
+      socketId: socket.id,
+      gameId,
+      gameState: {
+        principalBalanceBeforeBetDeduction:xyz,
+        remainingBalanceAfterBetDeduction:xyz-x,
+        betAmount: x,
+        wonAmount:+xyz,
+        lostAmount:-xyz,
+      },
+    };
+
+    const playerObj = {
+      id,
+      socketId: socket.id,
+      gameId,
+      gameState: {
+        principalBalanceBeforeBetDeduction:100,
+        remainingBalanceAfterBetDeduction:90,
+        betAmount: 10,
+        wonAmount:+xyz:promise,
+        lostAmount:-xyz:promise,
+      },
+    };
+
