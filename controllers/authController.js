@@ -81,6 +81,9 @@ const login = async (req, res, next) => {
   try {
     // Find the user by email
     const user = await User.findOne({ email: normalizedEmail });
+
+    console.log(user);
+
     if (!user) {
       return res.status(400).json({
         userExists: false,
