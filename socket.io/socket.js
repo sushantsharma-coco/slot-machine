@@ -84,10 +84,10 @@ io.on("connection", async (socket) => {
     gameState = "PRESSED_SPIN_BUTTON";
   });
 
-  socket.on("PRESSED_SPIN_BUTTON", () => {
+  socket.on("PRESSED_SPIN_BUTTON", async () => {
     if (gameState !== "PRESSED_SPIN_BUTTON") return;
 
-    let result = pressedSpinButton(socket);
+    let result = await pressedSpinButton(socket, id);
 
     if (result.success === false) {
       gameState = false;
