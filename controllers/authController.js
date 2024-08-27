@@ -27,9 +27,12 @@ const register = async (req, res, next) => {
     // Check if the user already exists based on email
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res
-        .status(400)
-        .json({ message: "User with this email already exists" });
+      return res.status(400).json({
+        userExists: true,
+        statusCode: 400,
+        success: false,
+        message: "User with this email already exists",
+      });
     }
 
     // Hash the password
@@ -39,7 +42,13 @@ const register = async (req, res, next) => {
     const user = new User({ name, email, password: hashedPassword, role });
     await user.save();
 
-    res.status(201).json({ message: "User registered successfully" });
+    // Respond with success message and additional information
+    res.status(201).json({
+      userExists: false,
+      statusCode: 201,
+      success: true,
+      message: "User registered successfully",
+    });
   } catch (error) {
     console.error("Registration error:", error); // Log the error for debugging
     errorHandler(error, req, res, next); // Use the errorHandler middleware
@@ -53,13 +62,23 @@ const login = async (req, res, next) => {
     // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({
+        userExists: false,
+        statusCode: 400,
+        success: false,
+        message: "Invalid email or password",
+      });
     }
 
     // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({
+        userExists: true,
+        statusCode: 400,
+        success: false,
+        message: "Invalid email or password",
+      });
     }
 
     // Generate tokens
@@ -80,6 +99,9 @@ const login = async (req, res, next) => {
 
     // Respond with success message and tokens
     res.json({
+      userExists: true,
+      statusCode: 200,
+      success: true,
       message: "Login successful",
       role: user.role,
       accessToken,
