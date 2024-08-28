@@ -1,4 +1,5 @@
 const User = require("../models/userSchema.js");
+const Wallet = require("../models/wallet.model.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { ApiError } = require("../utils/ApiError.utils.js");
@@ -158,10 +159,23 @@ const getCurrentUser = async (req, res) => {
     }
     // No need to query the database again if req.user is already populated
     const user = req.user;
+    // Fetch the user's wallet balance
+    const wallet = await Wallet.findOne({ user: req.user._id }).select(
+      "walletBalance"
+    );
 
+    // If wallet is not found, initialize the balance to 0
+    const walletBalance = wallet ? wallet.walletBalance : 0;
+
+    const userWithWallet = {
+      ...req.user._doc, // Spread the user's fields into a new object
+      walletBalance, // Add the wallet balance field directly within the user object
+    };
+
+    // Send the user object with wallet balance inside it
     res.status(200).send({
       statusCode: 200,
-      data: user,
+      data: userWithWallet,
       message: "Current user fetched successfully",
       success: true,
     });
