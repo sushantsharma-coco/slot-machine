@@ -10,10 +10,8 @@ const auth = async (req, res, next) => {
       req.header("Authorization")?.replace("Bearer ", "");
 
     if (!accessToken) throw new ApiError(401, "Access token not found");
-    console.log("token", accessToken);
 
     const tokenData = await jwt.verify(accessToken, process.env.JWT_SECRET);
-    console.log("token", tokenData);
     if (!tokenData || !tokenData.id) throw new ApiError(401, "Invalid token");
 
     const user = await User.findById(tokenData.id);

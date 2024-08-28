@@ -26,7 +26,7 @@ connectDB();
 app.use(errorHandler);
 app.use(express.json());
 app.use("/api/v1/user", authRouter.router);
-app.use("/api/v1/user", userRouter);
+app.use("/api/v1/user", userRouter.router);
 
 server.listen((process.env.PORT ??= 5000), () => {
   console.log("server running on port :", process.env.PORT);

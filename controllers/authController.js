@@ -161,10 +161,8 @@ const getCurrentUser = async (req, res) => {
 
     res.status(200).send({
       statusCode: 200,
-      data: {
-        message: "Current user fetched successfully",
-        data: user,
-      },
+      data: user,
+      message: "Current user fetched successfully",
       success: true,
     });
   } catch (error) {
