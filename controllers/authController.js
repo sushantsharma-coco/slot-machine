@@ -71,12 +71,29 @@ const login = async (req, res, next) => {
   }
 
   try {
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Find the user by email
+    const user = await User.findOne({ email: normalizedEmail });
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res
-        .status(400)
-        .send(new ApiError(400, "Invalid email or password"));
+    if (!user) {
+      return res.status(400).json({
+        userExists: false,
+        statusCode: 400,
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    // Compare the entered password with the hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        userExists: true,
+        statusCode: 400,
+        success: false,
+        message: "Invalid email or password",
+      });
+
     }
 
     const { accessToken, refreshToken } = generateTokens(user);
