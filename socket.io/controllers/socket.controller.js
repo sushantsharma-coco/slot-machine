@@ -138,7 +138,7 @@ const pressedSpinButton = async (socket, id) => {
     // approach second
 
     //777 jackpot won
-    if (((val1 === val2) === val3) === 7)
+    if (val1 === val2 && val2 === val3 && val3 === 7)
       userWon = {
         win: true,
         winCombo: WinningTypes.jackpot,
