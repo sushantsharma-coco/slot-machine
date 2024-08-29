@@ -82,8 +82,6 @@ const login = async (req, res, next) => {
     // Find the user by email
     const user = await User.findOne({ email: normalizedEmail });
 
-    console.log(user);
-
     if (!user) {
       return res.status(400).json({
         userExists: false,
@@ -93,13 +91,8 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Debug: Print out the passwords for comparison
-    console.log("Entered password:", password);
-    console.log("Hashed password from DB:", user.password);
-
     // Compare the entered password with the hashed password
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password match:", isMatch);
 
     if (!isMatch) {
       return res.status(400).json({

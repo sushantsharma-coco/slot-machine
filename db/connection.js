@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const { redisClient } = require("../client");
 
 // Load environment variables from .env file
 dotenv.config();
@@ -13,9 +14,9 @@ const connectDB = async () => {
 
     if (!conn) {
       console.error("DB connection unsuccessful");
-    } else {
-      console.log("DB connection successful");
     }
+
+    console.log("DB connection successful");
   } catch (error) {
     console.error(`Error: ${error.message}`);
     process.exit(1);

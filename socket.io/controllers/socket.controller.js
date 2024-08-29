@@ -13,6 +13,7 @@ const { Utility } = require("../../utils/Utility.utils");
 const Game = require("../../models/game.model");
 const Wallet = require("../../models/wallet.model");
 const { isValidObjectId, default: mongoose } = require("mongoose");
+const House = require("../../models/house.model");
 
 const startGame = async (socket, id) => {
   try {
@@ -20,24 +21,27 @@ const startGame = async (socket, id) => {
 
     let gameId = randomUUID();
 
-    // TODO : get user account and balance data from redis with key: user-${id} as it must be present
-    // user = await redisClient.get(`user-${id}`);
+    // load user wallet
+    let loadWallet = await Wallet.findOne({ user: id });
 
-    // if not return user with error, else move foward with init user state with data
-    // if (!user) return new RedisError(false, "user in redisClient not found");
+    if (!loadWallet) {
+      socket.emit("ERROR", "WALLET NOT FOUND");
+      return;
+    }
 
     const playerObj = {
       id,
       socketId: socket.id,
       gameId,
+      gameType: "", // from db of the slot machine
       // TODO: this data will come from redis as when the user login's the current balance must be inserted in the redis with user-${id}
       gameState: {
-        principalBalanceBeforeBet: user.walletBalance || 0,
+        principalBalanceBeforeBet: loadWallet.walletBalance || 9000,
         principalBalanceAfterBet: 0,
         betAmount: 0,
         wonAmount: 0,
         lostAmount: 0,
-        previousGameState: "",
+        previousGameState: "START",
         currentGameState: "STATE_GAME",
         combo: [],
       },
@@ -128,6 +132,13 @@ const pressedSpinButton = async (socket, id) => {
 
     console.log(val1, val2, val3);
 
+    let houseState = await redisClient.get("house");
+
+    if (!houseState)
+      return new RedisError(false, "house redis client not found");
+
+    houseState = JSON.parse(houseState);
+
     let userWon = false;
 
     // approcah first : taking winning_combination_array
@@ -174,8 +185,6 @@ const pressedSpinButton = async (socket, id) => {
 
     if (userWon.win) {
       socket.emit("WON_LOOSE", userWon);
-      // TODO :
-      // do all the calculations and operations for winning with certain win-comb
 
       if (userWon.winCombo === WinningTypes.jackpot) {
         player.gameState.wonAmount +=
@@ -193,6 +202,9 @@ const pressedSpinButton = async (socket, id) => {
 
         player.gameState.combo = userWon.combo;
       }
+
+      houseState.houseState -= player.gameState.wonAmount;
+      console.log("houseState in win", houseState);
 
       // update the current amounts and stuff
       let updatedWallet = await Wallet.findOne({
@@ -221,6 +233,9 @@ const pressedSpinButton = async (socket, id) => {
         player.gameState.combo = userWon.combo;
       }
 
+      houseState.houseState += player.gameState.betAmount;
+      console.log("houseState in lose", houseState);
+
       // update the current amounts and stuff
       let updatedWallet = await Wallet.findOne({
         user: new mongoose.Types.ObjectId(id),
@@ -234,15 +249,11 @@ const pressedSpinButton = async (socket, id) => {
         player.gameState.wonAmount + player.gameState.principalBalanceAfterBet;
 
       await updatedWallet.save();
-
-      console.log("updatedWallet in won ", updatedWallet);
     }
 
-    console.log("player in spin btn end ", player);
+    await redisClient.set("house", JSON.stringify(houseState));
 
-    let game;
-    // do {
-    game = await Game.create({
+    let game = await Game.create({
       playerId: player.id,
       socketId: player.socketId,
       gameId: player.gameId,
@@ -253,13 +264,23 @@ const pressedSpinButton = async (socket, id) => {
       "gameState.lostAmount": player.gameState.lostAmount,
       "gameState.combo": player.gameState.combo,
     });
-    // } while (!game);
 
     console.log("game", game);
 
+    player.gameState.previousGameState = player.gameState.currentGameState;
+    player.gameState.currentGameState = "PRESSED_SPIN_BUTTON";
+
+    console.log(` before save player-${id}`, player);
+
+    player = JSON.stringify(player);
+
+    let redis = await redisClient.set(`player-${id}`, player);
+
+    if (!redis) socket.emit("ERROR", "UNABLE TO SET BET AMOUNT");
+
     return new RedisSuccess(true, { val1, val2, val3 });
   } catch (error) {
-    console.error("error occured during spin button ", error?.message);
+    console.error("error occured during spin button ", error);
 
     return;
   }
@@ -267,8 +288,6 @@ const pressedSpinButton = async (socket, id) => {
 
 const exitYes = async (socket, id) => {
   try {
-    //DONE: before deleting the state we need to check and store the current user state and if any bets are placed then we need to rool back
-
     console.log("exitYes running");
     let r = await redisClient.del(`player-${id}`);
 

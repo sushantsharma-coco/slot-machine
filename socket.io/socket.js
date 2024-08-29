@@ -10,6 +10,8 @@ const {
   exitNo,
 } = require("./controllers/socket.controller");
 const { checkAuthentic } = require("./middlewares/auth.controller");
+const Wallet = require("../models/wallet.model");
+const { redisClient } = require("../client");
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -99,13 +101,15 @@ io.on("connection", async (socket) => {
       "EMIT ON 'X' WITH PRESSED_PLAY_AGAIN TO PLAY AGAIN AND EXIT_GAME TO EXIT GAME"
     );
 
-    socket.timeout(10000).on("X", ({ x }) => {
-      gameState = x;
+    gameState = "X";
+  });
 
-      console.log(gameState);
+  socket.on("X", ({ x }) => {
+    gameState = x;
 
-      socket.emit("MESSAGE", `EMIT ON ${gameState}`);
-    });
+    console.log(gameState);
+
+    socket.emit("MESSAGE", `EMIT ON ${gameState}`);
   });
 
   socket.on("PRESSED_PLAY_AGAIN", () => {
