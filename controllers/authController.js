@@ -1,7 +1,16 @@
 const User = require("../models/userSchema.js");
+const Wallet = require("../models/wallet.model.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const errorHandler = require("../middlewares/errorMiddleware");
+const { ApiError } = require("../utils/ApiError.utils.js");
+const { ApiResponse } = require("../utils/ApiResponse.utils");
+const dotenv = require("dotenv");
+dotenv.config();
+
+const options = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+};
 
 // Helper function to generate tokens
 const generateTokens = (user) => {
@@ -14,7 +23,7 @@ const generateTokens = (user) => {
   const refreshToken = jwt.sign(
     { id: user._id },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: "1d" }
+    { expiresIn: "7d" }
   );
 
   return { accessToken, refreshToken };
@@ -22,60 +31,43 @@ const generateTokens = (user) => {
 
 const register = async (req, res, next) => {
   const { name, email, password, role } = req.body;
-  // Check if any required fields are missing
+
   if (!name || !email || !password) {
-    return res.status(400).json({
-      userExists: false,
-      statusCode: 400,
-      success: false,
-      message: "Please fill in all required fields",
-    });
+    return res
+      .status(400)
+      .send(new ApiError(400, "Please fill in all required fields"));
   }
+
   try {
-    // Check if the user already exists based on email
     const userExists = await User.findOne({ email });
+
     if (userExists) {
-      return res.status(400).json({
-        userExists: true,
-        statusCode: 400,
-        success: false,
-        message: "User with this email already exists",
-      });
+      return res
+        .status(400)
+        .send(new ApiError(400, "User with this email already exists"));
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create and save the new user
     const user = new User({ name, email, password: hashedPassword, role });
     await user.save();
 
-    // Respond with success message and additional information
-    res.status(201).json({
-      userExists: false,
-      statusCode: 201,
-      success: true,
-      message: "User registered successfully",
-    });
+    res
+      .status(201)
+      .send(new ApiResponse(201, user, "User registered successfully"));
   } catch (error) {
-    console.error("Registration error:", error); // Log the error for debugging
-    errorHandler(error, req, res, next); // Use the errorHandler middleware
+    console.error("Registration error:", error);
+    next(new ApiError(500, error.message));
   }
 };
 
 const login = async (req, res, next) => {
   const { email, password } = req.body;
 
-  // Convert email to lowercase to avoid case sensitivity issues
-  const normalizedEmail = email.toLowerCase();
-
   if (!email || !password) {
-    return res.status(400).json({
-      userExists: false,
-      statusCode: 400,
-      success: false,
-      message: "Please fill in all required fields",
-    });
+    return res
+      .status(400)
+      .send(new ApiError(400, "Please fill in all required fields"));
   }
 
   try {
@@ -101,44 +93,35 @@ const login = async (req, res, next) => {
         success: false,
         message: "Invalid email or password",
       });
+
     }
 
-    // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user);
 
-    // Set cookies for tokens
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Set to true in production for HTTPS
-      maxAge: 3600000, // 1 hour
-    });
-
+    res.cookie("accessToken", accessToken, options);
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Set to true in production for HTTPS
+      ...options,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    // Respond with success message and tokens
-    res.status(200).json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-      tokens: {
-        accessToken,
-        refreshToken,
-      },
-      userExists: true,
-      statusCode: 200,
-      success: true,
-      message: "Login successful",
-    });
+    res.status(200).send(
+      new ApiResponse(
+        200,
+        {
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
+          tokens: { accessToken, refreshToken },
+        },
+        "Login successful"
+      )
+    );
   } catch (error) {
     console.error("Login error:", error);
-    errorHandler(error, req, res, next);
+    next(new ApiError(500, error.message));
   }
 };
 
@@ -146,7 +129,7 @@ const refreshAccessToken = async (req, res, next) => {
   const { refreshToken } = req.cookies;
 
   if (!refreshToken) {
-    return res.status(401).json({ message: "No refresh token provided" });
+    return res.status(401).send(new ApiError(401, "No refresh token provided"));
   }
 
   try {
@@ -154,26 +137,23 @@ const refreshAccessToken = async (req, res, next) => {
     const user = await User.findById(decoded.id);
 
     if (!user) {
-      return res.status(403).json({ message: "Invalid refresh token" });
+      return res.status(403).send(new ApiError(403, "Invalid refresh token"));
     }
 
     const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
 
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 3600000, // 1 hour
-    });
-
+    res.cookie("accessToken", accessToken, options);
     res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      ...options,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({ message: "Access token refreshed", accessToken });
+    res
+      .status(200)
+      .send(new ApiResponse(200, { accessToken }, "Access token refreshed"));
   } catch (error) {
-    errorHandler(error, req, res, next); // Use the errorHandler middleware
+    console.error("Refresh token error:", error);
+    next(new ApiError(500, error.message));
   }
 };
 
@@ -181,9 +161,51 @@ const logout = (req, res, next) => {
   try {
     res.clearCookie("accessToken");
     res.clearCookie("refreshToken");
-    res.json({ message: "Logout successful" });
+
+    res.status(200).send(new ApiResponse(200, null, "Logout successful"));
   } catch (error) {
-    errorHandler(error, req, res, next); // Use the errorHandler middleware
+    console.error("Logout error:", error);
+    next(new ApiError(500, error.message));
+  }
+};
+
+const getCurrentUser = async (req, res) => {
+  try {
+    if (!req.user || !req.user?._id) {
+      throw new ApiError(401, "Invalid user credentials");
+    }
+    // No need to query the database again if req.user is already populated
+    const user = req.user;
+    // Fetch the user's wallet balance
+    const wallet = await Wallet.findOne({ user: req.user._id }).select(
+      "walletBalance"
+    );
+
+    // If wallet is not found, initialize the balance to 0
+    const walletBalance = wallet ? wallet.walletBalance : 0;
+
+    const userWithWallet = {
+      ...req.user._doc, // Spread the user's fields into a new object
+      walletBalance, // Add the wallet balance field directly within the user object
+    };
+
+    // Send the user object with wallet balance inside it
+    res.status(200).send({
+      statusCode: 200,
+      data: userWithWallet,
+      message: "Current user fetched successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Get current user error:", error.message);
+    res.status(error?.statusCode || 500).send({
+      statusCode: error?.statusCode || 500,
+      data: {
+        message: error?.message || "Internal server error",
+        data: null,
+      },
+      success: false,
+    });
   }
 };
 
@@ -192,4 +214,5 @@ module.exports = {
   login,
   refreshAccessToken,
   logout,
+  getCurrentUser,
 };

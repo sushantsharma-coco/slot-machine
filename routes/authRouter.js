@@ -1,18 +1,34 @@
 const express = require("express");
-const router = express.Router();
+const protect = require("../middlewares/authMiddleware.js");
 const {
   register,
   login,
   refreshAccessToken,
   logout,
-} = require("../controllers/authController");
+  getCurrentUser,
+} = require("../controllers/authController.js");
 
-router.post("/register", register);
+const router = express.Router();
 
-router.post("/login", login);
+// User Registration
+router.route("/register").post(register);
 
-router.post("/refresh-token", refreshAccessToken);
+// User Login
+router.route("/login").post(login);
 
-router.post("/logout", logout);
+// Refresh Access Token
+router.route("/token/refresh").post(refreshAccessToken);
 
-module.exports = router;
+// User Logout
+router.route("/logout").post(logout);
+
+// Apply protect middleware for secured routes
+router.use(protect);
+
+// // User Logout
+// router.route("/logout").post(logout);
+
+// Get Current User
+router.route("/me").get(getCurrentUser);
+
+module.exports = { router };
