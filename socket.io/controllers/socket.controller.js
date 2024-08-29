@@ -145,7 +145,7 @@ const pressedSpinButton = async (socket, id) => {
         combo: [val1, val2, val3],
       };
     // 111,222,333... three of a kind won
-    else if ((val1 === val2) === val3)
+    else if (val1 === val2 && val2 === val3)
       userWon = {
         win: true,
         winCombo: WinningTypes.threeOfKind,
