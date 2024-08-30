@@ -24,8 +24,7 @@ const startGame = async (socket, id) => {
     let loadWallet = await Wallet.findOne({ user: id });
 
     if (!loadWallet) {
-      socket.emit("ERROR", "WALLET NOT FOUND");
-      return;
+      return new RedisError(false, "WALLET NOT FOUND");
     }
 
     const playerObj = {
@@ -46,7 +45,8 @@ const startGame = async (socket, id) => {
       },
     };
 
-    console.log(playerObj);
+    console.log("playerObj----------------------------");
+    console.error("playerObj----------------------------", playerObj);
 
     let result = await redisClient.set(
       `player-${id}`,
@@ -67,15 +67,16 @@ const startGame = async (socket, id) => {
 
 const setBetAmount = async (socket, id, betAmount) => {
   try {
-    console.log("setBetAmount running");
+    console.log("setBetAmount running", socket.id, id, betAmount);
 
     // check for player existance in redis-client which is must
 
     let playerExists = await redisClient.get(`player-${id}`);
 
     playerExists = JSON.parse(playerExists);
+    console.log(playerExists);
 
-    if (!playerExists.id) return RedisError(false, "player not found");
+    if (!playerExists?.id) return RedisError(false, "player not found");
 
     // check for sufficient balance in account for betAmount or else emit an error event with insufficient balance error message
 
@@ -112,10 +113,7 @@ const setBetAmount = async (socket, id, betAmount) => {
 
     return new RedisSuccess();
   } catch (error) {
-    console.error(
-      "error occured during setting betting amount :",
-      error?.message
-    );
+    console.error("error occured during setting betting amount :", error);
 
     return;
   }

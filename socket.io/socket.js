@@ -10,7 +10,6 @@ const {
   exitNo,
 } = require("./controllers/socket.controller");
 const { checkAuthentic } = require("./middlewares/auth.controller");
-const Wallet = require("../models/wallet.model");
 const { redisClient } = require("../client");
 
 const server = http.createServer(app);
@@ -50,6 +49,7 @@ io.on("connection", async (socket) => {
     if (gameState !== "START_GAME") return;
 
     let result = await startGame(socket, id);
+    // console.log(result);
 
     if (result?.success === false) {
       gameState = false;
@@ -66,6 +66,11 @@ io.on("connection", async (socket) => {
 
   socket.on("SET_BET_AMOUNT", async ({ betAmount }) => {
     if (gameState !== "SET_BET_AMOUNT") return;
+
+    if (!betAmount || betAmount < 5) {
+      socket.emit("ERROR", "ENTER VALID BET-AMOUNT");
+      return;
+    }
 
     if (typeof betAmount !== "number") return;
 
