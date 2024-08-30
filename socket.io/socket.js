@@ -181,7 +181,7 @@ try {
         currentState = JSON.parse(currentState);
         socket.emit("CURRENT_STATE", currentState);
 
-        gameState = currentState.gameState.currentGameState;
+        // gameState = currentState.gameState.currentGameState;
       } else {
         socket.emit("CURRENT_STATE", {});
       }
