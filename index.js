@@ -39,17 +39,16 @@ setInterval(async () => {
   console.log(houseState);
 
   if (houseState.houseState) {
-    let house = await houseModel.findOne({ name: "house_revenue" });
+    let house = await houseModel.findOneAndUpdate(
+      { name: "house_revenue" },
+      { houseState: houseState.houseState },
+      { new: true }
+    );
     console.log("house", house);
-
-    if (house?.houseState) {
-      house.houseState = houseState.houseState;
-      await house.save();
-    }
 
     console.log("updated the db");
   }
-}, 5000);
+}, 4000);
 
 server.listen((process.env.PORT ??= 5000), () => {
   console.log("server running on port :", process.env.PORT);

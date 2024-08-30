@@ -31,8 +31,6 @@ const startGame = async (socket, id) => {
       id,
       socketId: socket.id,
       gameId,
-      gameType: "", // from db of the slot machine
-      // TODO: this data will come from redis as when the user login's the current balance must be inserted in the redis with user-${id}
       gameState: {
         principalBalanceBeforeBet: loadWallet.walletBalance || 9000,
         principalBalanceAfterBet: 0,
