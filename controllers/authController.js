@@ -72,6 +72,9 @@ const login = async (req, res, next) => {
 
   try {
     // Find the user by email
+
+    const normalizedEmail = email.toLowerCase();
+
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
