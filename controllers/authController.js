@@ -67,7 +67,6 @@ const login = async (req, res, next) => {
   const { email, password } = req.body;
 
   // Convert email to lowercase to avoid case sensitivity issues
-  const normalizedEmail = email.toLowerCase();
 
   if (!email || !password) {
     return res.status(400).json({
@@ -80,6 +79,9 @@ const login = async (req, res, next) => {
 
   try {
     // Find the user by email
+
+    const normalizedEmail = email.toLowerCase();
+
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {

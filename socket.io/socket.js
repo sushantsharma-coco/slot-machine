@@ -93,6 +93,7 @@ io.on("connection", async (socket) => {
 
     if (result?.success === false) {
       gameState = false;
+      console.log(result);
       return;
     }
 
@@ -144,6 +145,7 @@ io.on("connection", async (socket) => {
         "MESSAGE",
         "RE-EMIT ON EXIT_YES AFTER SOMETIME TO EXIT GAME OR EXIT_NO TO NOT EXIT_GAME"
       );
+
       return;
     }
 
@@ -166,8 +168,10 @@ io.on("connection", async (socket) => {
     socket.emit("MESSAGE", "EXIT GAME CANCELLED SUCCESSFULLY");
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     console.log(`player with socket.id : ${socket.id} disconnected`);
+
+    await redisClient.del(`player-${id}`);
     gameState = false;
   });
 });
