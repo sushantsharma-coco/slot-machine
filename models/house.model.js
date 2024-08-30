@@ -15,4 +15,4 @@ const houseRevenueSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("house_revenue", houseRevenueSchema);
+module.exports = mongoose.model("HouseRevenue", houseRevenueSchema);

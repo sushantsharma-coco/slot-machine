@@ -13,7 +13,6 @@ const { Utility } = require("../../utils/Utility.utils");
 const Game = require("../../models/game.model");
 const Wallet = require("../../models/wallet.model");
 const { isValidObjectId, default: mongoose } = require("mongoose");
-const House = require("../../models/house.model");
 
 const startGame = async (socket, id) => {
   try {

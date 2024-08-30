@@ -6,6 +6,8 @@ const walletRouter = require("./routes/walletRouter.js");
 const errorHandler = require("./middlewares/errorMiddleware.js");
 const express = require("express");
 const cors = require("cors");
+const houseModel = require("./models/house.model.js");
+const { redisClient } = require("./client.js");
 
 app.use(
   cors({
@@ -22,11 +24,32 @@ app.get("/", (req, res) => {
     path: "/home",
   });
 });
+
 connectDB();
+
 app.use(errorHandler);
 app.use(express.json());
 app.use("/api/v1/user", authRouter.router);
 app.use("/api/v1/user", walletRouter.router);
+
+setInterval(async () => {
+  let houseState = await redisClient.get(`house`);
+  houseState = JSON.parse(houseState);
+
+  console.log(houseState);
+
+  if (houseState.houseState) {
+    let house = await houseModel.findOne({ name: "house_revenue" });
+    console.log("house", house);
+
+    if (house?.houseState) {
+      house.houseState = houseState.houseState;
+      await house.save();
+    }
+
+    console.log("updated the db");
+  }
+}, 1000);
 
 server.listen((process.env.PORT ??= 5000), () => {
   console.log("server running on port :", process.env.PORT);

@@ -1,10 +1,14 @@
 const ioredis = require("ioredis");
 
 const redisClient = new ioredis.Redis({
-  host: "127.0.0.1",
-  port: 6379,
+  host: process.env.REDIS_CLIENT_HOST,
+  port: process.env.REDIS_CLIENT_PORT,
 });
 
 if (redisClient) console.log("redis-connection successful");
+
+(async () => {
+  await redisClient.set("house", JSON.stringify({ houseState: 1 }));
+})();
 
 module.exports = { redisClient };
