@@ -22,9 +22,9 @@ module.exports = {
   },
 
   WinningTypesReturn: {
-    jackpot: 50,
-    threeOfKind: 35,
-    twoOfKind: 10,
+    jackpot: 45,
+    threeOfKind: 9,
+    twoOfKind: 2,
   },
 
   LostTypeReturn: {
