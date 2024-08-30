@@ -173,12 +173,14 @@ io.on("connection", async (socket) => {
     socket.emit("MESSAGE", "EXIT GAME CANCELLED SUCCESSFULLY");
   });
 
-  socket.on("GET_CURRENT_STATE", async () => {
+  socket.on("s", async () => {
     let currentState = await redisClient.get(`player-${id}`);
 
     if (currentState) {
       currentState = JSON.parse(currentState);
       socket.emit("CURRENT_STATE", currentState);
+
+      gameState = currentState.gameState.currentGameState;
     } else {
       socket.emit("CURRENT_STATE", {});
     }
@@ -187,7 +189,6 @@ io.on("connection", async (socket) => {
   socket.on("disconnect", async () => {
     console.log(`player with socket.id : ${socket.id} disconnected`);
 
-    await redisClient.del(`player-${id}`);
     gameState = false;
   });
 });
