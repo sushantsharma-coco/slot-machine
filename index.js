@@ -39,11 +39,11 @@ setInterval(async () => {
   console.log(houseState);
 
   if (houseState.houseState) {
-    let house = await houseModel.findOneAndUpdate(
-      { name: "house_revenue" },
-      { houseState: houseState.houseState },
-      { new: true }
-    );
+    let house = await houseModel.findOne({ name: "house_revenue" });
+
+    if (house.houseState) house.houseState = houseState.houseState;
+    await house.save();
+
     console.log("house", house);
 
     console.log("updated the db");
