@@ -49,7 +49,7 @@ setInterval(async () => {
 
     console.log("updated the db");
   }
-}, 1000);
+}, 5000);
 
 server.listen((process.env.PORT ??= 5000), () => {
   console.log("server running on port :", process.env.PORT);
