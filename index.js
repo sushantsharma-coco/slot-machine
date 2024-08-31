@@ -8,6 +8,7 @@ const express = require("express");
 const cors = require("cors");
 const houseModel = require("./models/house.model.js");
 const { redisClient } = require("./client.js");
+const userDashboardRouter = require("./routes/userDashboard.routes.js");
 
 app.use(
   cors({
@@ -31,6 +32,7 @@ app.use(errorHandler);
 app.use(express.json());
 app.use("/api/v1/user", authRouter.router);
 app.use("/api/v1/user", walletRouter.router);
+app.use("/api/v1/dashboard", userDashboardRouter.router);
 
 setInterval(async () => {
   let houseState = await redisClient.get(`house`);
