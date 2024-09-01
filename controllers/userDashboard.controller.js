@@ -12,7 +12,9 @@ const userAggregatedGamingData = async (req, res) => {
     let gamesData = await redisClient.get(`gamesData-${req.user?._id}`);
     gamesData = JSON.parse(gamesData);
 
-    if (!gamesData?._id) {
+    if (gamesData?.length) gamesData[0]["from"] = "redis";
+
+    if (!gamesData?.length) {
       gamesData = await Game.aggregate([
         {
           $match: {
@@ -37,8 +39,12 @@ const userAggregatedGamingData = async (req, res) => {
 
       await redisClient.set(
         `gamesData-${req.user?._id}`,
-        JSON.stringify(gamesData)
+        JSON.stringify(gamesData),
+        "EX",
+        150
       );
+
+      gamesData[0]["from"] = "db";
     }
 
     return res
@@ -46,7 +52,7 @@ const userAggregatedGamingData = async (req, res) => {
       .send(
         new ApiResponse(
           200,
-          { d: gamesData[0], p: "db" },
+          gamesData,
           "user aggregated data fetched successfully"
         )
       );
@@ -68,53 +74,65 @@ const gamesLeaderBoardData = async (req, res) => {
   try {
     if (!req.user?._id) throw new ApiError(401, "unauthroized user");
 
-    const leaderBoardData = await Game.aggregate([
-      {
-        $group: {
-          _id: "$playerId",
-          totalGamesPlayed: {
-            $sum: 1,
+    let leaderBoardData = await redisClient.get("leaderboard");
+    leaderBoardData = JSON.parse(leaderBoardData);
+
+    if (!leaderBoardData?.length) {
+      leaderBoardData = await Game.aggregate([
+        {
+          $group: {
+            _id: "$playerId",
+            totalGamesPlayed: {
+              $sum: 1,
+            },
+            totalBetAmount: {
+              $sum: "$gameState.betAmount",
+            },
+            totalWinAmount: {
+              $sum: "$gameState.wonAmount",
+            },
+            totalLostAmount: {
+              $sum: "$gameState.lostAmount",
+            },
           },
-          totalBetAmount: {
-            $sum: "$gameState.betAmount",
-          },
-          totalWinAmount: {
-            $sum: "$gameState.wonAmount",
-          },
-          totalLostAmount: {
-            $sum: "$gameState.lostAmount",
+        },
+        {
+          $sort: {
+            totalWinAmount: -1,
           },
         },
-      },
-      {
-        $sort: {
-          totalWinAmount: -1,
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "result",
+          },
         },
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "result",
+        {
+          $unwind: {
+            path: "$result",
+          },
         },
-      },
-      {
-        $unwind: {
-          path: "$result",
+        {
+          $project: {
+            totalGamesPlayed: 1,
+            totalBetAmount: 1,
+            totalWinAmount: 1,
+            totalLostAmount: 1,
+            "result.name": 1,
+            "result.email": 1,
+          },
         },
-      },
-      {
-        $project: {
-          totalGamesPlayed: 1,
-          totalBetAmount: 1,
-          totalWinAmount: 1,
-          totalLostAmount: 1,
-          "result.name": 1,
-          "result.email": 1,
-        },
-      },
-    ]);
+      ]);
+    }
+
+    await redisClient.set(
+      "leaderboard",
+      JSON.stringify(leaderBoardData),
+      "EX",
+      150
+    );
 
     return res
       .status(200)
