@@ -11,10 +11,11 @@ const userAggregatedGamingData = async (req, res) => {
 
     let gamesData = await redisClient.get(`gamesData-${req.user?._id}`);
     gamesData = JSON.parse(gamesData);
+    if (gamesData?.length) gamesData = gamesData[0];
 
-    if (gamesData?.length) gamesData[0]["from"] = "redis";
+    if (gamesData?._id) gamesData["from"] = "redis";
 
-    if (!gamesData?.length) {
+    if (!gamesData?._id) {
       gamesData = await Game.aggregate([
         {
           $match: {
@@ -44,7 +45,7 @@ const userAggregatedGamingData = async (req, res) => {
         150
       );
 
-      gamesData[0]["from"] = "db";
+      gamesData["from"] = "db";
     }
 
     return res
@@ -57,7 +58,7 @@ const userAggregatedGamingData = async (req, res) => {
         )
       );
   } catch (error) {
-    console.error("error occured :", error?.message);
+    console.error("error occured :", error);
 
     return res
       .status(error?.statusCode)
