@@ -2,8 +2,8 @@ const { server, app } = require("./socket.io/socket");
 const connectDB = require("./db/connection.js");
 const authRouter = require("./routes/authRouter.js");
 const walletRouter = require("./routes/walletRouter.js");
+const adminRouter = require("./routes/adminRouter.js");
 
-const errorHandler = require("./middlewares/errorMiddleware.js");
 const express = require("express");
 const cors = require("cors");
 
@@ -22,11 +22,12 @@ app.get("/", (req, res) => {
     path: "/home",
   });
 });
+
 connectDB();
-app.use(errorHandler);
 app.use(express.json());
 app.use("/api/v1/user", authRouter.router);
 app.use("/api/v1/user", walletRouter.router);
+app.use("/api/v1/admin", adminRouter.router);
 
 server.listen((process.env.PORT ??= 5000), () => {
   console.log("server running on port :", process.env.PORT);

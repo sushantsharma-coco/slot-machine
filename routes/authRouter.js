@@ -19,14 +19,11 @@ router.route("/login").post(login);
 // Refresh Access Token
 router.route("/token/refresh").post(refreshAccessToken);
 
-// User Logout
-router.route("/logout").post(logout);
-
 // Apply protect middleware for secured routes
 router.use(protect);
 
-// // User Logout
-// router.route("/logout").post(logout);
+// User Logout
+router.route("/logout").post(logout);
 
 // Get Current User
 router.route("/me").get(getCurrentUser);

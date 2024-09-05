@@ -29,50 +29,40 @@ const wallet = async (req, res, next) => {
   }
 };
 
-const addBalance = async (req, res) => {
+const addBalance = async (req, res, next) => {
   try {
     const { walletBalance } = req.body; // Extract balance from request body
-
     // Validate that walletBalance is provided and is a positive number
     if (walletBalance == null || walletBalance <= 0) {
       throw new ApiError(400, "Invalid wallet balance value");
     }
 
-    // Assuming user is authenticated and available in req.user
     const userId = req.user._id;
 
-    // Find or create a wallet for the user
-    let wallet = await Wallet.findOne({ user: userId });
-
-    if (!wallet) {
-      // If wallet does not exist, create a new one
-      wallet = new Wallet({
-        user: userId,
-        walletBalance: 0, // Initialize with 0 if new
-      });
-    }
+    // Find and Update  wallet for the user
+    let wallet = await Wallet.findOneAndUpdate(
+      { user: userId },
+      { $inc: { walletBalance: walletBalance } }
+    );
 
     // Update the wallet balance
-    wallet.walletBalance += walletBalance;
     await wallet.save();
 
     // Send the updated wallet info along with success message
-    res.status(200).send({
-      statusCode: 200,
-      data: wallet,
-      message: "Wallet balance updated successfully",
-      success: true,
-    });
+    res
+      .status(200)
+      .send(
+        new ApiResponse(200, wallet, "Wallet balance updated successfully")
+      );
   } catch (error) {
-    console.error("Add wallet balance error:", error.message);
-    res.status(error?.statusCode || 500).send({
-      statusCode: error?.statusCode || 500,
-      data: {
-        message: error?.message || "Internal server error",
-        data: null,
-      },
-      success: false,
-    });
+    res
+      .status(error.statusCode || 500)
+      .send(
+        new ApiError(
+          error.statusCode || 500,
+          error.message || "Internal server error"
+        )
+      );
   }
 };
 

@@ -1,15 +1,20 @@
 const User = require("../models/userSchema.js");
 const Wallet = require("../models/wallet.model.js");
+const Game = require("../models/game.model.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { ApiError } = require("../utils/ApiError.utils.js");
 const { ApiResponse } = require("../utils/ApiResponse.utils");
+// const {RedisError} = require("../utils/RedisError.utils.js")
+const { RedisSuccess } = require("../utils/RedisSuccess.utils.js");
+
 const dotenv = require("dotenv");
+const { redisClient } = require("../client.js");
 dotenv.config();
 
 const options = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: true,
 };
 
 // Helper function to generate tokens
@@ -80,6 +85,21 @@ const login = async (req, res, next) => {
     }
 
     const { accessToken, refreshToken } = generateTokens(user);
+
+    //redis login
+    // Assuming `user` is the authenticated user object fetched from your database
+    // const userId = user._id.toString();
+
+    // // Check if the user exists in Redis
+    // let existUser = await redisClient.get(`user-${userId}`);
+
+    // if (!existUser) {
+    //   // Convert the user object to a string and save it in Redis
+    //   await redisClient.set(`user-${userId}`, JSON.stringify(user));
+    //   console.log("User data was not found in Redis, saved it.");
+    // } else {
+    //   console.log("User data exists in Redis.");
+    // }
 
     res.cookie("accessToken", accessToken, options);
     res.cookie("refreshToken", refreshToken, {
@@ -165,30 +185,46 @@ const getCurrentUser = async (req, res) => {
     );
 
     // If wallet is not found, initialize the balance to 0
-    const walletBalance = wallet ? wallet.walletBalance : 0;
+    const walletBalance =
+      wallet && wallet.walletBalance != null ? wallet.walletBalance : 0;
+
+    // Calculate total wonAmount and lostAmount
+    const games = await Game.find({ playerId: req.user._id });
+    const wonAmount = games.reduce(
+      (acc, game) => acc + game.gameState.wonAmount,
+      0
+    );
+    const lostAmount = games.reduce(
+      (acc, game) => acc + game.gameState.lostAmount,
+      0
+    );
 
     const userWithWallet = {
       ...req.user._doc, // Spread the user's fields into a new object
       walletBalance, // Add the wallet balance field directly within the user object
+      wonAmount,
+      lostAmount,
     };
 
     // Send the user object with wallet balance inside it
-    res.status(200).send({
-      statusCode: 200,
-      data: userWithWallet,
-      message: "Current user fetched successfully",
-      success: true,
-    });
+    res
+      .status(200)
+      .send(
+        new ApiResponse(
+          200,
+          userWithWallet,
+          "Current user fetched successfully"
+        )
+      );
   } catch (error) {
-    console.error("Get current user error:", error.message);
-    res.status(error?.statusCode || 500).send({
-      statusCode: error?.statusCode || 500,
-      data: {
-        message: error?.message || "Internal server error",
-        data: null,
-      },
-      success: false,
-    });
+    res
+      .status(error.statusCode || 500)
+      .send(
+        new ApiError(
+          error.statusCode || 500,
+          error.message || "Internal server error"
+        )
+      );
   }
 };
 
